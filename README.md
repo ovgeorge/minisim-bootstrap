@@ -1,16 +1,30 @@
-# Minisim moving-block bootstrap
+# Bootstrap demo and example code
 
-`bootstrap.py` reads one-minute Binance candles, transforms close prices into
-multiplicative returns, samples uninterrupted day- or week-sized blocks, and
-writes Minisim `[time, price, volume]` trajectories.
+Bootstrapping samples from the empirical distribution of observed market
+returns. It is useful for simulations because it produces alternative price
+paths under the same "market law": the simulated paths reuse the behavior seen
+in the market data instead of assuming a particular probability distribution.
+This example uses a moving-block bootstrap, which also preserves dependence
+among returns within each sampled block.
+
+`bootstrap.py` reads one-minute Binance kline (candlestick) data. For production
+work, we recommend obtaining the kline data directly from Binance. The script
+uses only the close price of each candle. It transforms prices
+$p_0, p_1, p_2, \ldots$ into multiplicative returns
+$r_i = p_i / p_{i-1}$, samples uninterrupted day- or week-sized blocks of those
+returns, and writes price trajectories in Minisim's `[time, price, volume]`
+format. Prices are reconstructed recursively as $p_i = p_{i-1} r_i$.
 
 ![Moving-block bootstrap diagram](./docs/bootstrap_diagram.png)
 
 The top panel aligns the original price path with its close-to-close returns.
-Colors identify sampled blocks throughout selection, attachment, and price
-reconstruction. The red return crosses a time interruption, so no candidate
-block may contain it. The heatmap counts how often each source return is
-selected across 500 generated trajectories.
+Each color follows one sampled block: from its position in the source returns,
+through its new position in the resampled sequence, to the corresponding
+segment of the reconstructed price path. The red return crosses a time
+interruption, so this implementation excludes every candidate block containing
+it. Ignoring interruptions is another possible modeling choice. The heatmap
+counts how often each source return is selected across 500 generated
+trajectories.
 
 ![Animated moving-block bootstrap explanation](./docs/bootstrap_animation.gif)
 
@@ -34,8 +48,8 @@ The setup script uses a partial, sparse checkout of
 [`Shimuuar/cryptopool-simulator`](https://github.com/Shimuuar/cryptopool-simulator)
 and materializes its `minisim/` directory plus the shared `json.hpp` header
 that Minisim includes. The legacy simulator and experiment directories are not
-checked out. The dependency and compiled files remain under `.deps/`, outside
-this repository's history. The Minisim binary is written to:
+checked out. The sparse checkout and compiled files remain under `.deps/`,
+outside this repository's history. The Minisim binary is written to:
 
 ```text
 .deps/cryptopool-simulator/minisim/minisim
