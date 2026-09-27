@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Bootstrap Minisim price trajectories from Binance candle closes.
 
-Usage: python3 bootstrap.py CANDLES.json OUTPUT_DIR BLOCK_LENGTH TRAJECTORIES [SEED]
+Usage:
+    python3 bootstrap.py CANDLES.json OUTPUT_DIR BLOCK_LENGTH TRAJECTORIES
+        [SEED] [--ignore]
 
 BLOCK_LENGTH uses d for days or w for weeks, for example 7d or 2w.
 The default random seed is 0.
+--ignore skips candles whose close time does not advance.
 """
 
 import json
@@ -15,11 +18,17 @@ from statistics import median
 import sys
 
 
-input_name = sys.argv[1]
-output_dir = Path(sys.argv[2])
-block_length = sys.argv[3]
-number_of_trajectories = int(sys.argv[4])
-seed = int(sys.argv[5]) if len(sys.argv) == 6 else 0
+arguments = sys.argv[1:]
+ignore_nonmonotonic_candles = "--ignore" in arguments
+
+if ignore_nonmonotonic_candles:
+    arguments.remove("--ignore")
+
+input_name = arguments[0]
+output_dir = Path(arguments[1])
+block_length = arguments[2]
+number_of_trajectories = int(arguments[3])
+seed = int(arguments[4]) if len(arguments) == 5 else 0
 
 period_number = int(block_length[:-1])
 period_unit = block_length[-1]
@@ -32,6 +41,24 @@ block_size = period_number * returns_per_period
 
 with open(input_name) as input_file:
     candles = json.load(input_file)
+
+if ignore_nonmonotonic_candles:
+    input_candle_count = len(candles)
+    increasing_candles = []
+    last_close_time = -1
+
+    for candle in candles:
+        close_time = int(candle[6])
+
+        if close_time > last_close_time:
+            increasing_candles.append(candle)
+            last_close_time = close_time
+
+    candles = increasing_candles
+    print(
+        f"Ignored {input_candle_count - len(candles)} candles "
+        "whose close time did not advance"
+    )
 
 # Copy the three Binance columns used by the bootstrap.
 close_times = []
@@ -58,7 +85,7 @@ time_steps = []
 
 for i in range(len(close_times) - 1):
     time_step = close_times[i + 1] - close_times[i]
-    assert time_step > 0 # time is monotone
+    assert time_step > 0  # time is monotone
     time_steps.append(time_step)
 
 # Treat intervals within 10% of the median as uninterrupted data.

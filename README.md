@@ -7,9 +7,10 @@ in the market data instead of assuming a particular probability distribution.
 This example uses a moving-block bootstrap, which also preserves dependence
 among returns within each sampled block.
 
-`bootstrap.py` reads one-minute Binance candles, also called klines. The script
-uses only the close price of each candle. It transforms prices
-$p_0, p_1, p_2, \ldots$ into multiplicative returns
+`bootstrap.py` reads one-minute Binance kline/candlestick data in the REST
+API's JSON array format. Each record contains the open time, open, high, low,
+close, volume, close time, and five additional fields. The script uses the
+close price to transform prices $p_0, p_1, p_2, \ldots$ into multiplicative returns
 $r_i = p_i / p_{i-1}$, samples uninterrupted day- or week-sized blocks of those
 returns, and writes price trajectories in Minisim's `[time, price, volume]`
 format. Prices are reconstructed recursively as $p_i = p_{i-1} r_i$.
@@ -61,7 +62,7 @@ to:
 ## Generate trajectories
 
 ```bash
-python bootstrap.py CANDLES.json OUTPUT_DIR BLOCK_LENGTH TRAJECTORIES [SEED]
+python bootstrap.py CANDLES.json OUTPUT_DIR BLOCK_LENGTH TRAJECTORIES [SEED] [--ignore]
 ```
 
 For example, generate three trajectories from one-week blocks with seed 17:
@@ -72,13 +73,20 @@ python bootstrap.py \
     trajectories \
     1w \
     3 \
-    17
+    17 \
+    --ignore
 ```
 
 `BLOCK_LENGTH` uses `d` for days or `w` for weeks. For example, `7d` samples
 seven-day blocks and `2w` samples two-week blocks. Large contiguous blocks
 preserve the volatility dependence within each sampled period. The optional
 random seed defaults to `0`.
+
+The upstream example data repeats one hour at a daylight-saving boundary.
+`--ignore` discards any candle whose close time does not advance beyond the
+last accepted candle. Without this option, the script stops when it encounters
+nonmonotonic time. Ordinary forward gaps are retained and treated as
+interruptions that sampled blocks cannot cross.
 
 Each run also writes `selection_heatmap.png` in the output directory. Its rows
 are generated trajectories, its columns are source days or weeks, and its color
