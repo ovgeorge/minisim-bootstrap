@@ -12,7 +12,7 @@ reconstruction. The red return crosses a time interruption, so no candidate
 block may contain it. The heatmap counts how often each source return is
 selected across 500 generated trajectories.
 
-[Open the animated explanation](./docs/bootstrap_animation.gif).
+![Animated moving-block bootstrap explanation](./docs/bootstrap_animation.gif)
 
 ## Setup
 
