@@ -7,8 +7,7 @@ in the market data instead of assuming a particular probability distribution.
 This example uses a moving-block bootstrap, which also preserves dependence
 among returns within each sampled block.
 
-`bootstrap.py` reads one-minute Binance kline (candlestick) data. For production
-work, we recommend obtaining the kline data directly from Binance. The script
+`bootstrap.py` reads one-minute Binance candles, also called klines. The script
 uses only the close price of each candle. It transforms prices
 $p_0, p_1, p_2, \ldots$ into multiplicative returns
 $r_i = p_i / p_{i-1}$, samples uninterrupted day- or week-sized blocks of those
@@ -44,12 +43,16 @@ Fetch and build the pinned Minisim version:
 ./scripts/fetch_minisim.sh
 ```
 
+This step requires Git LFS, `xz`, `make`, and a C++17 compiler.
+
 The setup script uses a partial, sparse checkout of
 [`Shimuuar/cryptopool-simulator`](https://github.com/Shimuuar/cryptopool-simulator)
 and materializes its `minisim/` directory plus the shared `json.hpp` header
-that Minisim includes. The legacy simulator and experiment directories are not
-checked out. The sparse checkout and compiled files remain under `.deps/`,
-outside this repository's history. The Minisim binary is written to:
+that Minisim includes. It also fetches and decompresses a short BTCUSDT candle
+dataset for the example below. The legacy simulator and experiment directories
+are not checked out. The sparse checkout, sample data, and compiled files remain
+under `.deps/`, outside this repository's history. The Minisim binary is written
+to:
 
 ```text
 .deps/cryptopool-simulator/minisim/minisim
@@ -61,10 +64,15 @@ outside this repository's history. The Minisim binary is written to:
 python bootstrap.py CANDLES.json OUTPUT_DIR BLOCK_LENGTH TRAJECTORIES [SEED]
 ```
 
-For example, generate 100 trajectories from two-week blocks with seed 17:
+For example, generate three trajectories from one-week blocks with seed 17:
 
 ```bash
-python bootstrap.py btc2023.json trajectories 2w 100 17
+python bootstrap.py \
+    .deps/cryptopool-simulator/reference-check/data/binance-short-btcusdt-1m.json \
+    trajectories \
+    1w \
+    3 \
+    17
 ```
 
 `BLOCK_LENGTH` uses `d` for days or `w` for weeks. For example, `7d` samples
