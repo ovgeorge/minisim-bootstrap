@@ -1,0 +1,6 @@
+.venv/
+.deps/
+cryptopool-simulator/
+trajectories/
+__pycache__/
+*.pyc
